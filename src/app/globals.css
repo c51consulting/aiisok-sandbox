@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-bg: #0a0a0f;
+  --brand-card: #12121a;
+  --brand-border: #1e1e2e;
+  --brand-accent: #6c63ff;
+  --brand-text: #e2e2f0;
+}
+
+body {
+  background-color: var(--brand-bg);
+  color: var(--brand-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.locked-blur {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes score-ring {
+  from { stroke-dashoffset: 283; }
+  to { stroke-dashoffset: var(--offset); }
+}
+
+.animate-score-ring {
+  animation: score-ring 1.2s ease-out forwards;
+}
