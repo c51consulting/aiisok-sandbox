@@ -15,6 +15,7 @@ const OutputSchema = z.object({
   quick_win: z.string(),
   system_score: z.number().min(1).max(100),
   premium_teaser: z.string(),
+  priority_fixes: z.array(z.string()).length(3),
 });
 
 const SYSTEM_PROMPT = `You are an AI business systems advisor.
@@ -29,7 +30,8 @@ Return ONLY valid JSON matching this exact shape:
   "top_gaps": ["gap 1", "gap 2", "gap 3"],
   "quick_win": "best first automation move (1-2 sentences)",
   "system_score": <number 1-100 where 100 is maximum chaos>,
-  "premium_teaser": "one specific premium-only insight that hints at a deeper systemic issue without fully explaining it"
+  "premium_teaser": "one specific premium-only insight that hints at a deeper systemic issue without fully explaining it",
+  "priority_fixes": ["specific fix 1 with tool recommendation", "specific fix 2 with tool recommendation", "specific fix 3 with tool recommendation"]
 }
 
 Base your answer only on the user's inputs. No generic advice.`;
@@ -44,29 +46,26 @@ Team size: ${input.teamSize}
 Tools used: ${input.tools}
 Biggest bottleneck: ${input.bottleneck}`;
 
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
+    const openai = getOpenAIClient();
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
       ],
       temperature: 0.7,
-      max_tokens: 600,
       response_format: { type: 'json_object' },
     });
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error('No content from OpenAI');
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) throw new Error('No response from OpenAI');
 
-    const parsed = JSON.parse(content);
-    const validated = OutputSchema.parse(parsed);
-
-    return NextResponse.json(validated);
+    const parsed = OutputSchema.parse(JSON.parse(raw));
+    return NextResponse.json(parsed);
   } catch (err) {
-    console.error('automation-gaps API error:', err);
+    console.error('Play error:', err);
     return NextResponse.json(
-      { error: 'Failed to generate diagnosis' },
+      { error: 'Failed to generate result' },
       { status: 500 }
     );
   }
