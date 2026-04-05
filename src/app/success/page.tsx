@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
-  const [ready, setReady] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
     if (sessionId) {
-      // Fetch session details to get email and store it
       fetch(`/api/stripe/session?session_id=${sessionId}`)
         .then((res) => res.json())
         .then((data) => {
@@ -23,17 +22,17 @@ export default function SuccessPage() {
           }
         })
         .catch(console.error)
-        .finally(() => setReady(true));
+        .finally(() => setDone(true));
     } else {
-      setReady(true);
+      setDone(true);
     }
   }, [searchParams]);
 
   return (
     <main className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
-        <div className="text-5xl mb-6">✓</div>
-        <h1 className="text-3xl font-bold text-white mb-3">You're in.</h1>
+        <div className="text-5xl mb-6 text-[#22c55e]">&#10003;</div>
+        <h1 className="text-3xl font-bold text-white mb-3">You&apos;re in.</h1>
         <p className="text-[#8888aa] mb-8">
           Your subscription is active. Head back to your results to
           unlock your premium insights, or run a new play.
@@ -54,5 +53,13 @@ export default function SuccessPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0f]" />}>
+      <SuccessContent />
+    </Suspense>
   );
 }
