@@ -12,6 +12,7 @@ export interface AutomationGapsResult {
   top_gaps: string[];
   quick_win: string;
   system_score: number;
+  priority_fixes?: string[];
   premium_teaser: string;
 }
 
