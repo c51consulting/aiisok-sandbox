@@ -7,6 +7,7 @@ import type { AutomationGapsResult } from '@/types';
 export default function ResultsPage() {
   const [result, setResult] = useState<AutomationGapsResult | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [tier, setTier] = useState<string>('free');
 
   useEffect(() => {
     const raw = sessionStorage.getItem('sandbox_result');
@@ -17,7 +18,28 @@ export default function ResultsPage() {
         // ignore
       }
     }
-    setLoaded(true);
+
+    // Check subscription status
+    const email = sessionStorage.getItem('sandbox_email');
+    const cachedTier = sessionStorage.getItem('sandbox_tier');
+
+    if (cachedTier && cachedTier !== 'free') {
+      setTier(cachedTier);
+      setLoaded(true);
+    } else if (email) {
+      fetch(`/api/subscription?email=${encodeURIComponent(email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.tier && data.status === 'active') {
+            setTier(data.tier);
+            sessionStorage.setItem('sandbox_tier', data.tier);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoaded(true));
+    } else {
+      setLoaded(true);
+    }
   }, []);
 
   if (!loaded) return null;
@@ -33,6 +55,7 @@ export default function ResultsPage() {
     );
   }
 
+  const isPaid = tier !== 'free';
   const scoreOffset = Math.round(283 - (283 * result.system_score) / 100);
   const scoreColor = result.system_score > 70 ? '#ef4444' : result.system_score > 40 ? '#f59e0b' : '#22c55e';
 
@@ -40,7 +63,6 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-[#0a0a0f] px-6 py-16">
       <div className="max-w-2xl mx-auto">
         <Link href="/sandbox" className="text-[#6c63ff] text-sm hover:underline">← Run another play</Link>
-
         <h1 className="text-3xl font-bold text-white mt-6 mb-2">Your Automation Gap Diagnosis</h1>
         <p className="text-[#8888aa] mb-10">Based on your inputs, here is what the AI found.</p>
 
@@ -91,21 +113,41 @@ export default function ResultsPage() {
           <p className="text-white text-sm leading-relaxed">{result.quick_win}</p>
         </div>
 
-        {/* Locked Premium */}
-        <div className="relative bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-6 mb-8 overflow-hidden">
-          <div className="locked-blur text-[#8888aa] text-sm leading-relaxed">
-            {result.premium_teaser}
+        {/* Premium Section */}
+        {isPaid ? (
+          <div className="bg-[#12121a] border border-[#6c63ff]/50 rounded-2xl p-6 mb-6">
+            <div className="text-[#6c63ff] text-xs font-semibold uppercase tracking-wider mb-3">✨ Premium Insight — {tier.charAt(0).toUpperCase() + tier.slice(1)}</div>
+            <p className="text-white text-sm leading-relaxed">{result.premium_teaser}</p>
+            {result.priority_fixes && result.priority_fixes.length > 0 && (
+              <div className="mt-4">
+                <div className="text-[#8888aa] text-xs font-semibold uppercase tracking-wider mb-2">Priority Fix Order</div>
+                <ol className="space-y-2">
+                  {result.priority_fixes.map((fix, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="text-[#6c63ff] font-mono text-sm shrink-0">{i + 1}.</span>
+                      <span className="text-[#8888aa] text-sm">{fix}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0f]/60 backdrop-blur-sm">
-            <div className="text-center px-6">
-              <div className="text-white font-semibold mb-1">🔒 Premium Insight Locked</div>
-              <p className="text-[#8888aa] text-sm mb-4">Upgrade to Pro to unlock your full system map, priority fix order, and deeper stack analysis.</p>
-              <Link href="/upgrade?tier=pro" className="bg-[#6c63ff] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#7c73ff] transition-colors">
-                Unlock with Sandbox Pro
-              </Link>
+        ) : (
+          <div className="relative bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-6 mb-8 overflow-hidden">
+            <div className="locked-blur text-[#8888aa] text-sm leading-relaxed">
+              {result.premium_teaser}
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0f]/60 backdrop-blur-sm">
+              <div className="text-center px-6">
+                <div className="text-white font-semibold mb-1">🔒 Premium Insight Locked</div>
+                <p className="text-[#8888aa] text-sm mb-4">Upgrade to Pro to unlock your full system map, priority fix order, and deeper stack analysis.</p>
+                <Link href="/upgrade?tier=pro" className="bg-[#6c63ff] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#7c73ff] transition-colors">
+                  Unlock with Sandbox Pro
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* KAOS CTA */}
         <div className="bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-6 text-center">
