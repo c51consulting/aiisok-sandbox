@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from '@/lib/openai';
 
 export async function POST(req: Request) {
   try {
+    const openai = getOpenAIClient();
     const body = await req.json();
     const { revenue, team_size, industry, primary_challenge } = body;
 
